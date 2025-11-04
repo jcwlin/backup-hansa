@@ -35,9 +35,17 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import logging
 import sqlite3
 from typing import List, Dict, Any, Optional
-# Configure Poppler path for pdf2image on Windows
-# Configure Poppler path for Windows
-logging.basicConfig(level=logging.INFO)  # ensure INFO logs are printed
+
+
+
+import subprocess
+try:
+    result = subprocess.run(["pdftotext", "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print("Poppler check:", result.stderr.decode() or result.stdout.decode())
+except Exception as e:
+    print("Poppler not found in PATH:", e)
+
+logging.basicConfig(level=logging.INFO)
 
 # Check current directory and files
 logging.info(f"Current working directory: {os.getcwd()}")
@@ -563,31 +571,38 @@ def extract_json_from_response(resp):
     }
 
 def extract_text_from_pdf(file_path):
-    """Extract text from PDF, use OCR if extraction fails"""
+    """Extract text from PDF using pdfplumber, fallback to OCR if needed"""
+    import pdfplumber
+    import pytesseract
+    from pdf2image import convert_from_path
+    from PIL import Image
+    import io, os
+
+    text = ""
+
     try:
-        texts = []
+        # Try pdfplumber first (works for text-based PDFs)
         with pdfplumber.open(file_path) as pdf:
-            for i, page in enumerate(pdf.pages):
-                text = page.extract_text()
-                if text and text.strip():
-                    texts.append(text)
-                else:
-                    images = convert_from_path(
-                        file_path,
-                        first_page=i + 1,
-                        last_page=i + 1,
-                        poppler_path=r'C:\Program Files\poppler-24.08.0\Library\bin'
-                    )
-                    ocr_lang = config.get('ocr_lang', 'eng') or 'eng'
-                    for image in images:
-                        ocr_text = pytesseract.image_to_string(image, lang=ocr_lang)
-                        texts.append(ocr_text)
-        result = '\n'.join(texts)
-        app.logger.info(f"extract_text_from_pdf: {file_path} Final return length: {len(result) if result else 0}")
-        return result
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
     except Exception as e:
-        app.logger.error(f"PDF extraction error {file_path}: {str(e)}")
-        return None
+        print(f"[extract_text_from_pdf][ERROR] pdfplumber failed: {e}")
+
+    # If no text, try OCR (for scanned PDFs)
+    if not text.strip():
+        print(f"[extract_text_from_pdf][INFO] No text found in {os.path.basename(file_path)}, running OCR...")
+        try:
+            images = convert_from_path(file_path)
+            for img in images:
+                ocr_text = pytesseract.image_to_string(img)
+                text += ocr_text + "\n"
+        except Exception as e:
+            print(f"[extract_text_from_pdf][ERROR] OCR failed: {e}")
+
+    return text.strip() if text else None
+
 
 def extract_text_from_word(file_path):
     """Extract text from Word document"""

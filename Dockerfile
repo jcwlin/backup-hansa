@@ -4,16 +4,18 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsqlite3-dev \
+    poppler-utils \
+    libpoppler-cpp-dev \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-chi-tra \
-    poppler-utils \
-    libpoppler-cpp-dev \
+    ghostscript \
+    imagemagick \
     gcc \
     g++ \
     curl \
  && rm -rf /var/lib/apt/lists/*
+
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
