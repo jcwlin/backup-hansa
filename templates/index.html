@@ -55,18 +55,16 @@
 
       <form id="uploadForm" method="post" enctype="multipart/form-data">
         <!-- 檔案分類選擇 -->
-        <div class="form-group">
-          <label class="form-label">
-            <i class="fas fa-tag"></i>
-            Select Analyzer
-          </label>
-          <select id="fileCategory" class="form-select" name="analysis_type" required>
-            <option value="">Select Analyzer</option>
-            {% for analyzer in allowed_analyzers %}
-              <option value="{{ analyzer }}">{{ analyzer }}</option>
-            {% endfor %}
-          </select>
-        </div>
+<div class="form-group">
+  <label class="form-label">
+    <i class="fas fa-tag"></i>
+    Select Analyzer
+  </label>
+  <select id="fileCategory" class="form-select" name="analysis_type" required>
+    <option value="">Select Analyzer</option>
+    <option value="Cargo_BL">Cargo_BL</option>
+  </select>
+</div>
 
 
 
