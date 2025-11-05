@@ -36,7 +36,14 @@ import logging
 import sqlite3
 from typing import List, Dict, Any, Optional
 
+DATA_DIR = '/data'
+os.makedirs(DATA_DIR, exist_ok=True)
 
+# Use /data for all files that must persist
+HISTORY_FILE = os.path.join(DATA_DIR, 'history.pkl')
+DB_PATH = os.path.join(DATA_DIR, 'app.db')
+UPLOAD_FOLDER = os.path.join(DATA_DIR, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 import subprocess
 try:
@@ -72,6 +79,7 @@ else:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 DetectorFactory.seed = 0
+
 
 app = Flask(__name__)
 app.secret_key = 'fileanalyzer_secret_key'
