@@ -317,15 +317,20 @@ function displayFileList(files) {
 // 開始分析
 function startAnalysis() {
   const formData = new FormData(document.getElementById('uploadForm'));
-  
+
   // 重置分析開始時間
   analysisStartTime = null;
-  
-  // 顯示進度區域
+
+  // FIRST: Reset progress bar to 0% and show "Initializing..."
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressText').textContent = 'Initializing...';
+  document.getElementById('analyzing-label').textContent = 'Starting analysis...';
+
+  // THEN: Show progress area
   document.getElementById('progressArea').style.display = 'block';
   document.getElementById('resultArea').style.display = 'none';
   document.getElementById('submitBtn').disabled = true;
-  
+
   // 滾動到進度區域
   document.getElementById('progressArea').scrollIntoView({ behavior: 'smooth' });
 
@@ -347,7 +352,6 @@ function startAnalysis() {
     resetUI();
   });
 }
-
 // 開始時間記錄
 let analysisStartTime = null;
 
