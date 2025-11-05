@@ -100,9 +100,9 @@ app.secret_key = 'fileanalyzer_secret_key'
 #     }
 
 # Set upload folder
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = '/data/uploads' if os.path.exists('/data') else 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER, mode=0o755)
+    os.makedirs(UPLOAD_FOLDER, mode=0o755, exist_ok=True)
     app.logger.info(f"Created upload folder: {UPLOAD_FOLDER}")
 # 確保上傳目錄有正確權限
 try:
