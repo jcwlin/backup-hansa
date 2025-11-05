@@ -959,6 +959,55 @@ def save_to_history(entry):
     except Exception as e:
         app.logger.error(f"Failed to save history: {str(e)}")
 
+
+def migrate_pickle_to_sqlite():
+    """One-time migration: Move history.pkl data to SQLite"""
+    import pickle
+    import json
+
+    if not os.path.exists(HISTORY_FILE):
+        return
+
+    try:
+        with open(HISTORY_FILE, 'rb') as f:
+            old_history = pickle.load(f)
+
+        conn = get_db_connection()
+        for entry in old_history:
+            try:
+                conn.execute('''
+                    INSERT INTO history (username, timestamp, files, analysis_type, lang, rows, cols, 
+                                        headers, tokens, excel, log_file, time_cost, duration_str, 
+                                        total_pages, saved_files)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    entry.get('username'),
+                    entry.get('time'),
+                    json.dumps(entry.get('files', [])),
+                    entry.get('analysis_type'),
+                    entry.get('lang'),
+                    entry.get('rows'),
+                    entry.get('cols'),
+                    json.dumps(entry.get('headers', [])),
+                    entry.get('tokens'),
+                    entry.get('excel'),
+                    entry.get('log_file'),
+                    entry.get('time_cost'),
+                    entry.get('duration_str'),
+                    entry.get('total_pages'),
+                    json.dumps(entry.get('saved_files', []))
+                ))
+            except Exception as e:
+                logging.error(f"Failed to migrate entry: {e}")
+
+        conn.commit()
+        conn.close()
+
+        os.rename(HISTORY_FILE, HISTORY_FILE + '.migrated')
+        logging.info(f"Migrated {len(old_history)} records from pickle to SQLite")
+    except Exception as e:
+        logging.error(f"Migration failed: {e}")
+
 # 修正檔案內容提取函數名稱
 def extract_text(file_path, file_extension):
     """提取檔案文字內容"""
@@ -2923,6 +2972,7 @@ def admin_user_stats(username):
 
 if __name__ == '__main__':
     init_db()
+    migrate_pickle_to_sqlite()
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
