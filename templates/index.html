@@ -366,6 +366,7 @@ function pollProgress() {
   fetch(`/progress/${taskId}`)
   .then(response => response.json())
   .then(data => {
+  console.log('Progress data:', data);
     window.indexProgressErrorStartTime = null;
 
     const elapsedSeconds = Math.floor((Date.now() - analysisStartTime) / 1000);

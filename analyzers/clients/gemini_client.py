@@ -12,7 +12,7 @@ from pdf2image import convert_from_path
 # Gemini Configuration
 # -------------------------------------------------------------------
 GEMINI_CONFIG = {
-    "api_key": os.getenv("GOOGLE_API_KEY"),
+    "api_key": os.getenv("GEMINI_API_KEY"),
     "project_id": "hansa-tanker",
     "model": "gemini-2.5-pro",
     "location": "us-central1",
