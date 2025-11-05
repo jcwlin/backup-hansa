@@ -372,6 +372,10 @@ function pollProgress() {
     // 計算經過時間
     const elapsedSeconds = Math.floor((Date.now() - analysisStartTime) / 1000);
     const progressPercentage = data.percentage || (data.current && data.total ? (data.current / data.total * 100) : 0);
+     if (progressPercentage === 0 && !data.message) {
+      setTimeout(pollProgress, 500);
+      return;
+    }
     
     updateProgress(progressPercentage, data.message, elapsedSeconds, data.current, data.total);
     
