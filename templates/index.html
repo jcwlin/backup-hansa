@@ -365,7 +365,7 @@ function pollProgress() {
 
   fetch(`/progress/${taskId}`)
   .then(response => response.json())
- then(data => {
+  .then(data => {
   console.log('Progress data:', data);
   window.indexProgressErrorStartTime = null;
 
