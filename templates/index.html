@@ -365,19 +365,26 @@ function pollProgress() {
 
   fetch(`/progress/${taskId}`)
   .then(response => response.json())
-  .then(data => {
+ then(data => {
   console.log('Progress data:', data);
-    window.indexProgressErrorStartTime = null;
+  window.indexProgressErrorStartTime = null;
 
-    const elapsedSeconds = Math.floor((Date.now() - analysisStartTime) / 1000);
-    const progressPercentage = data.percentage || 0;
+  const elapsedSeconds = Math.floor((Date.now() - analysisStartTime) / 1000);
+  const progressPercentage = data.percentage || 0;
 
-    if (progressPercentage === 0 && !data.message) {
-      setTimeout(pollProgress, 500);
-      return;
-    }
+  // Check for final result FIRST
+  if (data.headers && data.rows) {
+    displayResults(data);
+    return;
+  }
 
-    updateProgress(progressPercentage, data.message, elapsedSeconds, data.current, data.total);
+  // Then skip 0% progress
+  if (progressPercentage === 0 && !data.message) {
+    setTimeout(pollProgress, 500);
+    return;
+  }
+
+  updateProgress(progressPercentage, data.message, elapsedSeconds, data.current, data.total);
 
     // FIX: Check for headers/rows instead of success flag
     if (data.headers && data.rows) {
