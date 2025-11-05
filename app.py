@@ -321,7 +321,7 @@ def migrate_db_schema():
             cur.execute(f"ALTER TABLE users ADD COLUMN {col} {col_type}")
             print(f"✅ Added column: {col}")
         except sqlite3.OperationalError:
-            pass
+            pass  # Column already exists
 
     conn.commit()
     conn.close()
