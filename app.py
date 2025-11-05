@@ -1071,7 +1071,7 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
         log_entries.append(f"Custom Prompt: {'Yes' if custom_prompt else 'No'}")
         log_entries.append("")
 
-        update_progress(task_id, 0, total_files, 'Starting analysis...')
+        update_progress(task_id, 0, 100, 'Starting analysis...')
 
         file_path_list = []
         for file_data in file_data_list:
@@ -1098,7 +1098,8 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
             for idx, (filename, content, file_path, local_total_pages) in enumerate(
                     executor.map(extract_worker, file_path_list)):
                 processed_files += 1
-                update_progress(task_id, processed_files, total_files * 2, f"Analyzing {filename} ")
+                progress_pct = int(10 + (processed_files / total_files * 40))  # 10-50%
+                update_progress(task_id, progress_pct, 100, f"Extracting {filename}")
                 extracted.append((filename, content, file_path))
                 total_pages += local_total_pages
                 content_length = len(content) if content else 0
@@ -1109,7 +1110,6 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
 
         log_entries.append("")
         log_entries.append("=== LLM Analysis Phase ===")
-
 
         def extract_worker_multi_bl(file_path_tuple):
             """Modified extract worker for multi-BL PDFs"""
@@ -1195,7 +1195,6 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                 for idx, section in enumerate(bl_sections, 1):
                     print(f"Section {idx}: {section[:200]!r}")
 
-                # Helper function to clean VOY.NO.
                 # Helper function to clean VOY.NO.
                 def clean_voy_no(voy_value, bl_number=None):
                     """Extract 4-digit voyage number, with fallback to BL number"""
@@ -1324,8 +1323,8 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                 log_entries.append(f"LLM Analysis: {filename}")
                 log_entries.append(f"  - Tokens Used: {tokens_used}")
                 log_entries.append(f"  - Analysis Result: {'Success' if result else 'Failed'}")
-                update_progress(task_id, total_files + processed_files_llm, total_files * 2, f"Analyzing {filename}")
-
+                progress_pct = int(50 + (processed_files_llm / total_files * 40))  # 50-90%
+                update_progress(task_id, progress_pct, 100, f"Analyzing {filename}")
 
                 if result:
                     if analysis_type == 'Cargo_BL':
@@ -1506,6 +1505,8 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                     all_data = fill_missing_charterers_by_cargo(all_data)
 
         # Postprocessing
+        update_progress(task_id, 90, 100, 'Post-processing data...')
+
         import re
         import pprint
         def clean_and_convert_qty(value):
@@ -1597,23 +1598,11 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                 else:
                     item['B/L quantity (MT)'] = None
 
-                # 4. Format the final B/L Quantity with commas
-                if bl_val is not None:
-                    item['B/L quantity (MT)'] = f"{bl_val:,.3f}"  # Add comma here
-                else:
-                    item['B/L quantity (MT)'] = None
-
                 # 5. Validate OBL release date format
                 obl_date = item.get('OBL release date')
                 if not (isinstance(obl_date, str) and re.match(r'^\d{4}-\d{2}-\d{2}$', obl_date)):
                     item['OBL release date'] = None
 
-            # --- FINAL DEBUG LOGGING (runs ONCE after all processing is complete) ---
-            #app.logger.info(f"Post-processing completed for task {task_id}: {len(all_data)} items processed.")
-            pp = pprint.PrettyPrinter(depth=4)
-#            for i, final_item in enumerate(all_data, 1):
- #               app.logger.info(f"Final Row {i}: {pp.pformat(final_item)}")
-            app.logger.info("=== DEBUG: all_data BEFORE cargo_bl_postprocess ===")
             app.logger.info("=== DEBUG: all_data BEFORE cargo_bl_postprocess ===")
             if all_data:
                 df = pd.DataFrame(all_data)
@@ -1631,14 +1620,8 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                 sample_item = next((item for item in all_data if isinstance(item, dict) and 'File name' in item), None)
                 if sample_item:
                     app.logger.info(f"Sample item with 'File name': {sample_item.get('File name')}")
-            # Debug: Check after calling cargo_bl_postprocess
-            has_filename_after_postprocess = any('File name' in item for item in all_data if isinstance(item, dict))
-            #app.logger.info(f"After cargo_bl_postprocess: has 'File name' = {has_filename_after_postprocess}")
-            if has_filename_after_postprocess:
-                sample_item = next((item for item in all_data if isinstance(item, dict) and 'File name' in item), None)
-                if sample_item:
-                    app.logger.info(f"Sample item with 'File name': {sample_item.get('File name')}")
-        # 獲取列名（cargo_bl_postprocess 已經處理了 __filename__ 字段）
+
+            # 獲取列名（cargo_bl_postprocess 已經處理了 __filename__ 字段）
             headers = list(all_data[0].keys()) if all_data else []
 
             # 調試日誌
@@ -1670,8 +1653,7 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
 
             # 檢查是否有 VESSEL 和 VOY.NO. 信息（針對 Cargo_BL）
             vessel_voy_info = globals().get('vessel_voy_data', None)
-            # === DEBUG: Log all_data before Excel export ===
-            pp = pprint.PrettyPrinter(depth=4)
+
             app.logger.info("=== DEBUG: all_data BEFORE export_to_excel ===")
             if all_data:
                 # Remove copy_type column if it still exists
@@ -1680,10 +1662,12 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                         del item['copy_type']
 
                 df = pd.DataFrame(all_data)
-                # Limit columns if there are too many
                 app.logger.info("\n" + tabulate(df, headers='keys', tablefmt='psql', showindex=True))
             else:
                 app.logger.info("⚠️ all_data is empty.")
+
+            update_progress(task_id, 95, 100, 'Generating Excel file...')
+
             excel_path = export_to_excel(all_data, excel_filename, 'Hansa Tankers', user_info=user_info,
                                          include_logo=True, vessel_voy_info=vessel_voy_info,
                                          keep_filename=keep_filename)
@@ -1732,14 +1716,6 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
 
             logging.info(f"Detailed log file generated: {log_filename}")
 
-            # Optional: rounded total time for final display or print
-            time_cost = round(time.time() - start_time, 2)
-
-            # 直接生成英文日誌
-            with open(log_path, 'w', encoding='utf-8') as log_file:
-                log_file.write('\n'.join(log_entries))
-            logging.info(f"Log file generated: {log_filename}")
-
             time_cost = round(time.time() - start_time, 2)
 
             # 根據設置決定是否保存文件
@@ -1779,16 +1755,17 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                 'headers': headers,
                 'tokens': total_tokens,
                 'excel': excel_filename,
-                'log_file': log_filename,  # 新增 log 檔案記錄
+                'log_file': log_filename,
                 'time_cost': time_cost,
                 'duration_str': f"{time_cost:.2f} sec.",
                 'username': username,
-                'total_pages': total_pages,  # 新增頁數記錄
-                'saved_files': saved_files  # 設置保存的文件列表
+                'total_pages': total_pages,
+                'saved_files': saved_files
             }
             save_to_history(history_entry)
+
             app.logger.info(f"About to set final progress for task {task_id}")
-            update_progress(task_id, total_files * 2, total_files * 2, 'Analysis completed!')
+            update_progress(task_id, 100, 100, 'Analysis completed!')
             app.logger.info(f"Updated final progress for task {task_id}")
 
             # 提取純數據用於前端顯示
@@ -1801,11 +1778,12 @@ def process_files_with_progress(task_id, file_data_list, analysis_type, lang, cu
                     'headers': headers,
                     'rows': simple_rows,
                     'excel': excel_filename,
-                    'log_file': log_filename,  # 新增 log 檔案記錄
+                    'log_file': log_filename,
                     'lang_code': lang,
                     'total_pages': total_pages
                 }
-                app.logger.info(f"Successfully set final_result for task {task_id}: success=True, rows={len(simple_rows)}, excel={excel_filename}")
+                app.logger.info(
+                    f"Successfully set final_result for task {task_id}: success=True, rows={len(simple_rows)}, excel={excel_filename}")
         else:
             app.logger.warning(f"No data extracted for task {task_id}, setting failure result")
             with progress_lock:
