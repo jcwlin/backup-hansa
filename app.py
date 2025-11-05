@@ -169,7 +169,6 @@ def get_progress(task_id):
                 'current': 0,
                 'total': 1,
                 'percentage': 0,
-                'message': 'Task not found'
             })
             
             # 記錄進度請求
