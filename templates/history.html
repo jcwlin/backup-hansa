@@ -24,7 +24,7 @@
     <div class="user-info-bar">
       <div class="user-welcome">
         <i class="fas fa-user-circle"></i>
-        Welcome, <strong>{{ session.username }}</strong>
+        Welcome, <strong>{{ session.get('username', 'Guest') }}</strong>
       </div>
       <div class="user-actions">
         <!-- Language selector removed -->
